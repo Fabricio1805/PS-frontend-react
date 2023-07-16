@@ -7,8 +7,14 @@ function App() {
     <>
       <h1>olá fabricio</h1>
       <Input />
+      <Input />
+      <Input />
+
+      <button>Pesquisar</button>
+
+      
     </>
-  )
+  );
 }
 
 export default App
