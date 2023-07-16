@@ -1,9 +1,10 @@
-export const Input = () => {
+import { InputHTMLAttributes } from "react";
+import * as C from "./style";
+
+type InputProps = InputHTMLAttributes<HTMLInputElement>;
+
+export const Input = ({ ...rest }: InputProps) => {
   return (
-    <>
-      <input type="email"/>
-    </>
+    <C.Input {...rest} />
   );
-}
-
-
+};
