@@ -17,7 +17,7 @@ const GlobalStyle = createGlobalStyle`
   }
   
   body, input, button{
-    font: 400 1rem sans-serif;
+    font: 400 1.2rem sans-serif;
   }
 
   @media(max-width: 720px) {
@@ -30,6 +30,9 @@ const GlobalStyle = createGlobalStyle`
     html{
       font-size: 93.75%;
     }
+  }
+  table, th, td {
+    border: 1px solid black;
   }
 `;
 

@@ -1,72 +1,158 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from './components/input/Input'
 import { api } from './services/apiClient';
 import GlobalStyle from './styles/GlobalStyle';
-import logo from '../public/logo.svg';
+import logo from './assets/logo.svg';
 
 import * as C from './App';
+import { formatDate } from './utils/FormatDate';
+import formatCurrency from './utils/formatCurrenct';
+import { toast } from 'react-toastify';
   
+interface ITransaction {
+  id: number;
+  data_transferencia: string;
+  valor: number;
+  tipo: string;
+  nome_operador_transacao: string;
+  conta_id: number;
+}
   
 function App() {
 
   const [startDate, setStarDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [operatorName, setOperatorName] = useState("");
-      
-  /*const test = async () => {
-    
-   await api.get("/").then((res) => {
-      console.log(res.data) 
-   });
-  }
-  console.log(test());*/
-  
+
+  const [totalPeriod, setTotalPeriod] = useState<number>(0);
+  const [total, setTotal] = useState<number>(0);
+
+  const [transaction, setTransaction] = useState<ITransaction[]>([]);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const response = await api.get("/");
+        const data = response.data as ITransaction[];
+
+        const total = data.reduce(
+          (acc, allTransaction) => acc + allTransaction.valor,
+          0
+        );
+        setTotal(total);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchTransactions().catch((error) => {
+      console.error(error);
+    });
+  }, []);
+
+
+  useEffect(() => {
+    const calculateTotalValue = (transactions: ITransaction[]): number => {
+      return transactions.reduce(
+        (total, transaction) => total + transaction.valor,
+        0
+      );
+    };
+
+    setTotalPeriod(calculateTotalValue(transaction));
+  }, [transaction]);
+
+
   const handleFilter = () => {
-    console.log("funcionou");6.
-  }
-
-  console.log(startDate)
-    console.log(endDate);
-      console.log(operatorName);
-
+    switch (true) {
+      case !!operatorName:
+        api
+          .get("/operatorName", { params: { nomeOperador: operatorName } })
+          .then((res) => {
+            setTransaction(res.data as ITransaction[]);
+          })
+          .catch(() => {
+             toast.warn("Nenhuma Transação encontrada.");
+          });
+        break;
+      case !!startDate && !!endDate:
+        api
+          .get("/betweenDate", {
+            params: { startDate, endDate },
+          })
+          .then((res) => {
+            setTransaction(res.data as ITransaction[]);
+          })
+          .catch(() => {
+            toast.warn("Nenhuma Transação encontrada.");
+          });
+        break;
+      case !!startDate && !!endDate && !!operatorName:
+        api
+          .get("/allParams", {
+            params: { startDate, endDate, nomeOperador: operatorName },
+          })
+          .then((res) => {
+            setTransaction(res.data as ITransaction[]);
+          })
+          .catch(() => {
+             toast.warn("Nenhuma Transação não encontrada.");          });
+        break;
+      default:
+        api
+          .get("/")
+          .then((res) => {
+            setTransaction(res.data as ITransaction[]);
+          })
+          .catch(() => {
+            toast.warn("Nenhuma Transação não encontrada.");
+          });
+        break;
+    }
+  };
 
   return (
-    <C.Container>
-      <img src={logo}/>
-      <C.ContainerFilter>
-        <label htmlFor="">
-          Data de início
+    <>
+      <C.Container>
+        <img src={logo} />
+        <GlobalStyle />
+      </C.Container>
+
+      <C.Content>
+        <C.ContainerFilter>
+          <label>Data de início</label>
           <Input
             type="date"
             value={startDate}
             onChange={(e) => setStarDate(e.target.value)}
           />
-        </label>
-
-        <label htmlFor="">
-          Data de fim
+        </C.ContainerFilter>
+        <C.ContainerFilter>
+          <label htmlFor="">Data de fim</label>
           <Input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
-        </label>
+        </C.ContainerFilter>
 
-        <label htmlFor="">
-          Nome do operador transacionado
+        <C.ContainerFilter>
+          <label>Nome do operador transacionado</label>
           <Input
             type="text"
             value={operatorName}
             onChange={(e) => setOperatorName(e.target.value)}
           />
-        </label>
+        </C.ContainerFilter>
 
         <C.Button onClick={handleFilter}>Pesquisar</C.Button>
-      </C.ContainerFilter>
-
+      </C.Content>
       <C.Info>
-        <p>Saldo total: R$ 50,00</p>
-        <p>Saldo no periodo: R$ 50,00</p>
+        <p>Saldo total: </p>
+        <b>{formatCurrency(total)}</b>
+
+        <p>Saldo no periodo:</p>
+        <b>{formatCurrency(totalPeriod)}</b>
       </C.Info>
 
       <C.ContainerTable>
@@ -81,18 +167,20 @@ function App() {
           </thead>
 
           <tbody>
-            <C.Tr>
-              <C.td>14/02/2019/</C.td>
-              <C.td>R$ 30895,46</C.td>
-              <C.td>Depósito</C.td>
-              <C.td>Fulano</C.td>
-            </C.Tr>
+            {transaction.map((trans) => {
+              return (
+                <C.Tr key={trans.id}>
+                  <C.td>{formatDate(trans.data_transferencia)}</C.td>
+                  <C.td>{formatCurrency(trans.valor)}</C.td>
+                  <C.td>{trans.tipo}</C.td>
+                  <C.td>{trans.nome_operador_transacao}</C.td>
+                </C.Tr>
+              );
+            })}
           </tbody>
         </table>
       </C.ContainerTable>
-
-      <GlobalStyle />
-    </C.Container>
+    </>
   );
 }
 
